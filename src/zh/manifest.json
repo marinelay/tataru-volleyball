@@ -1,19 +1,19 @@
 {
-  "name": "皮卡丘打排球",
-  "short_name": "皮球",
+  "name": "타타루 배구",
+  "short_name": "타타루 배구",
   "icons": [
     {
-      "src": "../resources/assets/images/IDI_PIKAICON-1_gap_filled.png",
+      "src": "../resources/assets/images/icons/yan-32.png",
       "type": "image/png",
-      "sizes": "48x48"
+      "sizes": "32x32"
     },
     {
-      "src": "../resources/assets/images/IDI_PIKAICON-1_gap_filled_192.png",
+      "src": "../resources/assets/images/icons/yan-192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "../resources/assets/images/IDI_PIKAICON-1_gap_filled_512.png",
+      "src": "../resources/assets/images/icons/yan-512.png",
       "type": "image/png",
       "sizes": "512x512"
     }
