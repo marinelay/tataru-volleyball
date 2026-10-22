@@ -1,3 +1,6 @@
+> **Forked from [gorisanson/pikachu-volleyball](https://github.com/gorisanson/pikachu-volleyball).**
+> 이 저장소는 원본 피카츄 배구 웹 버전을 바탕으로 만든 타타루 배구 팬 패러디입니다. 아래는 원본 프로젝트의 README이며, 이 버전의 변경 사항과 실행 방법은 [README-TATARU.md](README-TATARU.md)에 있습니다.
+
 # Pikachu Volleyball
 
 _&check;_ _English_ | [_Korean(한국어)_](README.ko.md)
