@@ -437,6 +437,7 @@
         </div>
       </div>
     </div>
+    <% if (webpackConfig.mode !== 'development') { %>
     <script type="module">
       /*
        * Register service worker with some configuration for service worker update notice.
@@ -489,5 +490,6 @@
         wb.register();
       }
     </script>
+    <% } %>
   </body>
 </html>

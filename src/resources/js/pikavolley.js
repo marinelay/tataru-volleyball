@@ -208,6 +208,7 @@ export class PikachuVolleyball {
       this.noInputFrameCounter = 0;
       this.selectedWithWho = 0;
       this.view.menu.selectWithWho(this.selectedWithWho);
+      this.audio.sounds.pi.stop();
       this.audio.sounds.pi.play();
     } else if (
       (this.keyboardArray[0].yDirection === 1 ||
@@ -217,6 +218,7 @@ export class PikachuVolleyball {
       this.noInputFrameCounter = 0;
       this.selectedWithWho = 1;
       this.view.menu.selectWithWho(this.selectedWithWho);
+      this.audio.sounds.pi.stop();
       this.audio.sounds.pi.play();
     } else {
       this.noInputFrameCounter++;
@@ -238,6 +240,7 @@ export class PikachuVolleyball {
           this.physics.player2.isComputer = false;
         }
       }
+      this.audio.sounds.pi.stop();
       this.audio.sounds.pikachu.play();
       this.frameCounter = 0;
       this.noInputFrameCounter = 0;
@@ -461,20 +464,16 @@ export class PikachuVolleyball {
     for (let i = 0; i < 2; i++) {
       const player = this.physics[`player${i + 1}`];
       const sound = player.sound;
-      let leftOrCenterOrRight = 0;
-      if (this.isStereoSound) {
-        leftOrCenterOrRight = i === 0 ? -1 : 1;
-      }
       if (sound.pipikachu === true) {
-        audio.sounds.pipikachu.play(leftOrCenterOrRight);
+        // Consume the victory cue silently, keeping the original win animation.
         sound.pipikachu = false;
       }
       if (sound.pika === true) {
-        audio.sounds.pika.play(leftOrCenterOrRight);
+        // Consume the attack animation cue; Tataru reacts only to a real hit.
         sound.pika = false;
       }
       if (sound.chu === true) {
-        audio.sounds.chu.play(leftOrCenterOrRight);
+        // Consume jump/dive cues silently; the original "chu" voice is disabled.
         sound.chu = false;
       }
     }
@@ -490,6 +489,9 @@ export class PikachuVolleyball {
     }
     if (sound.powerHit === true) {
       audio.sounds.powerHit.play(leftOrCenterOrRight);
+      // Restart the voice on each impact instead of stacking clips.
+      audio.sounds.pika.stop();
+      audio.sounds.pika.play(leftOrCenterOrRight);
       sound.powerHit = false;
     }
     if (sound.ballTouchesGround === true) {

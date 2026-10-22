@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <meta charset="utf-8" />
+  <title>타타루 배구 캐시 복구</title>
+  <p id="status">이 게임의 오래된 캐시를 정리하고 있습니다…</p>
+  <script>
+    (async () => {
+      const scope = new URL('/', location.href).href;
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(
+          registrations
+            .filter((registration) => registration.scope === scope)
+            .map((registration) => registration.unregister())
+        );
+      }
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter(
+            (key) => key.startsWith('workbox-precache-') && key.endsWith(scope)
+          )
+          .map((key) => caches.delete(key))
+      );
+      location.replace('/ko/');
+    })().catch(() => {
+      document.getElementById('status').textContent =
+        '캐시 정리에 실패했습니다. 이 페이지를 새로고침해 주세요.';
+    });
+  </script>
+</html>

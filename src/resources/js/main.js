@@ -40,9 +40,11 @@ import { CanvasRenderer } from '@pixi/canvas-renderer';
 import { CanvasSpriteRenderer } from '@pixi/canvas-sprite';
 import { CanvasPrepare } from '@pixi/canvas-prepare';
 import '@pixi/canvas-display';
+import { sound } from '@pixi/sound';
 import { PikachuVolleyball } from './pikavolley.js';
 import { ASSETS_PATH } from './assets_path.js';
 import { setUpUI } from './ui.js';
+import { addParodyAssets, applyParodyTextures } from './parody.js';
 
 // Reference for how to use Renderer.registerPlugin:
 // https://github.com/pixijs/pixijs/blob/af3c0c6bb15aeb1049178c972e4a14bb4cabfce4/bundles/pixi.js/src/index.ts#L27-L34
@@ -84,6 +86,7 @@ document.getElementById('game-canvas-container').appendChild(renderer.view);
 renderer.render(stage); // To make the initial canvas painting stable in the Firefox browser.
 
 loader.add(ASSETS_PATH.SPRITE_SHEET);
+addParodyAssets(loader);
 for (const prop in ASSETS_PATH.SOUNDS) {
   loader.add(ASSETS_PATH.SOUNDS[prop]);
 }
@@ -112,6 +115,30 @@ function setUpInitialUI() {
   gameDropdownBtn.disabled = true;
   // @ts-ignore
   optionsDropdownBtn.disabled = true;
+  // Pages without an introduction start loading as soon as they are opened.
+  if (!aboutBox) {
+    // Pixi unlocks audio on pointer input; also support starting with Z/Enter.
+    const unlockKeyboardAudio = () => {
+      const context = sound.context.audioContext;
+      if (!context || context.state === 'running') {
+        window.removeEventListener('keydown', unlockKeyboardAudio);
+        return;
+      }
+      context
+        .resume()
+        .then(() => {
+          if (context.state === 'running')
+            window.removeEventListener('keydown', unlockKeyboardAudio);
+        })
+        .catch(() => {
+          // Retry on the next key if this gesture could not unlock audio.
+        });
+    };
+    window.addEventListener('keydown', unlockKeyboardAudio);
+    loadingBox.classList.remove('hidden');
+    loader.load(setup);
+    return;
+  }
   const closeAboutBox = () => {
     if (!aboutBox.classList.contains('hidden')) {
       aboutBox.classList.add('hidden');
@@ -142,9 +169,19 @@ function setUpInitialUI() {
  * Set up the game and the full UI, and start the game.
  */
 function setup() {
+  applyParodyTextures(loader.resources);
   const pikaVolley = new PikachuVolleyball(stage, loader.resources);
   setUpUI(pikaVolley, ticker);
   start(pikaVolley);
+  if (new URLSearchParams(location.search).has('debug')) {
+    window.__tataru = {
+      game: pikaVolley,
+      renderer,
+      stage,
+      ticker,
+      resources: loader.resources,
+    };
+  }
 }
 
 /**

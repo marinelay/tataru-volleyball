@@ -1,5 +1,8 @@
 dist/
 node_modules/
+.local/
+test-results/
+playwright-report/
 analytics.html
 .firebase/
 .firebaserc

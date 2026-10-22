@@ -335,11 +335,14 @@ export class GameView {
     const textures = resources[ASSETS_PATH.SPRITE_SHEET].textures;
 
     // Display objects below
+    this.hasCostaBackground = Boolean(textures['background/costa_del_sol.png']);
     this.bgContainer = makeBGContainer(textures);
     const playerSprites = makePlayerAnimatedSprites(textures);
     this.player1 = playerSprites[0];
     this.player2 = playerSprites[1];
     this.ball = makeBallAnimatedSprites(textures);
+    this.tataruSmile = textures['ball/tataru_smile.png'];
+    this.tataruOuch = textures['ball/tataru_ouch.png'];
     this.ballHyper = makeSpriteWithAnchorXY(
       textures,
       TEXTURES.BALL_HYPER,
@@ -352,6 +355,8 @@ export class GameView {
       0.5,
       0.5
     );
+    this.ballHyper.alpha = 0.65;
+    this.ballTrail.alpha = 0.35;
     this.punch = makeSpriteWithAnchorXY(
       textures,
       TEXTURES.BALL_PUNCH,
@@ -378,6 +383,12 @@ export class GameView {
     };
 
     this.cloudContainer = makeCloudContainer(textures);
+    if (this.hasCostaBackground) {
+      // Keep a few original moving clouds in the open sky above the resort.
+      this.cloudContainer.children.forEach((cloud, index) => {
+        cloud.visible = index < 4;
+      });
+    }
     this.waveContainer = makeWaveContainer(textures);
 
     // container which include whole display objects
@@ -452,6 +463,8 @@ export class GameView {
     for (const prop in this.messages) {
       this.messages[prop].visible = false;
     }
+    this.lastBallPosition = null;
+    this.ballSpinDirection = 1;
   }
 
   /** @typedef {import("./physics").PikaPhysics} PikaPhysics */
@@ -496,7 +509,14 @@ export class GameView {
     this.ball.x = ball.x;
     this.ball.y = ball.y;
     this.shadows.forBall.x = ball.x;
-    this.ball.gotoAndStop(ball.rotation);
+    // Face and spin are visual only; the original physics still controls motion.
+    const faceTexture = ball.isPowerHit ? this.tataruOuch : this.tataruSmile;
+    if (faceTexture) {
+      this.ball.texture = faceTexture;
+      this.updateBallRotation(ball);
+    } else {
+      this.ball.gotoAndStop(ball.rotation);
+    }
 
     // For punch effect, refer FUN_00402ee0
     if (ball.punchEffectRadius > 0) {
@@ -522,6 +542,38 @@ export class GameView {
       this.ballHyper.visible = false;
       this.ballTrail.visible = false;
     }
+  }
+
+  /** Rotate with travel and preserve the two previous angles for the trail. */
+  updateBallRotation(ball) {
+    const isNewServe =
+      ball.y === 0 &&
+      (ball.x === 56 || ball.x === 376) &&
+      ball.xVelocity === 0 &&
+      ball.yVelocity === 1 &&
+      !ball.isPowerHit;
+    if (this.lastBallPosition === null || isNewServe) {
+      this.ball.rotation = 0;
+      this.ballHyper.rotation = 0;
+      this.ballTrail.rotation = 0;
+      this.ballSpinDirection = 1;
+    } else if (
+      this.lastBallPosition.x !== ball.x ||
+      this.lastBallPosition.y !== ball.y
+    ) {
+      this.ballTrail.rotation = this.ballHyper.rotation;
+      this.ballHyper.rotation = this.ball.rotation;
+      const travel = Math.sqrt(
+        Math.pow(ball.x - ball.previousX, 2) +
+          Math.pow(ball.y - ball.previousY, 2)
+      );
+      if (ball.xVelocity !== 0)
+        this.ballSpinDirection = Math.sign(ball.xVelocity);
+      // A gentle spin on regular returns, capped for readable spike faces.
+      this.ball.rotation +=
+        this.ballSpinDirection * Math.min(0.32, travel / 48);
+    }
+    this.lastBallPosition = { x: ball.x, y: ball.y };
   }
 
   /**
@@ -559,11 +611,14 @@ export class GameView {
       const cloud = cloudArray[i];
       const cloudSprite = this.cloudContainer.getChildAt(i);
       cloudSprite.x = cloud.spriteTopLeftPointX;
-      cloudSprite.y = cloud.spriteTopLeftPointY;
+      cloudSprite.y = this.hasCostaBackground
+        ? Math.round(cloud.spriteTopLeftPointY * 0.25)
+        : cloud.spriteTopLeftPointY;
+      const cloudScale = this.hasCostaBackground ? 0.6 : 1;
       // @ts-ignore
-      cloudSprite.width = cloud.spriteWidth;
+      cloudSprite.width = Math.round(cloud.spriteWidth * cloudScale);
       // @ts-ignore
-      cloudSprite.height = cloud.spriteHeight;
+      cloudSprite.height = Math.round(cloud.spriteHeight * cloudScale);
     }
 
     for (let i = 0; i < 432 / 16; i++) {
@@ -730,20 +785,27 @@ function makeSittingPikachuTilesContainer(textures) {
 function makeBGContainer(textures) {
   const bgContainer = new Container();
 
-  // sky
   let tile;
-  let texture = textures[TEXTURES.SKY_BLUE];
-  for (let j = 0; j < 12; j++) {
-    for (let i = 0; i < 432 / 16; i++) {
-      tile = new Sprite(texture);
-      addChildToParentAndSetLocalPosition(bgContainer, tile, 16 * i, 16 * j);
+  let texture;
+  const costa = textures['background/costa_del_sol.png'];
+  if (costa) {
+    // Scenery ends above the original court; net and collision landmarks stay put.
+    tile = new Sprite(costa);
+    addChildToParentAndSetLocalPosition(bgContainer, tile, 0, 0);
+  } else {
+    // Original scenery remains available when the parody texture is absent.
+    texture = textures[TEXTURES.SKY_BLUE];
+    for (let j = 0; j < 12; j++) {
+      for (let i = 0; i < 432 / 16; i++) {
+        tile = new Sprite(texture);
+        addChildToParentAndSetLocalPosition(bgContainer, tile, 16 * i, 16 * j);
+      }
     }
-  }
 
-  // mountain
-  texture = textures[TEXTURES.MOUNTAIN];
-  tile = new Sprite(texture);
-  addChildToParentAndSetLocalPosition(bgContainer, tile, 0, 188);
+    texture = textures[TEXTURES.MOUNTAIN];
+    tile = new Sprite(texture);
+    addChildToParentAndSetLocalPosition(bgContainer, tile, 0, 188);
+  }
 
   // ground_red
   texture = textures[TEXTURES.GROUND_RED];

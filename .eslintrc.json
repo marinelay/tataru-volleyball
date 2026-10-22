@@ -14,6 +14,16 @@
     "sourceType": "module"
   },
   "plugins": ["prettier"],
+  "overrides": [
+    {
+      "files": [
+        "src/resources/js/parody.js",
+        "tests/**/*.js",
+        "playwright.config.js"
+      ],
+      "parserOptions": { "ecmaVersion": 2022 }
+    }
+  ],
   "rules": {
     "prettier/prettier": [
       "error",
